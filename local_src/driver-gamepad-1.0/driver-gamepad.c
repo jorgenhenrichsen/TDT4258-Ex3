@@ -5,6 +5,9 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/fs.h>
+
+
 
 /*
  * template_init - function to insert this module into kernel space
