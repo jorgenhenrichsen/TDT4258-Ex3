@@ -18,6 +18,19 @@
 static int __init template_init(void)
 {
 	printk("Hello World, here is your module speaking\n");
+
+	dev_t dev;
+	int firstminor = 15;
+	int count = 10;
+	char name[] = "gamepad"
+
+	int chrdev_status = register_chrdev_region(firstminor, count, name);
+
+	//int chrdev_status = alloc_chrdev_region(&dev, firstminor, count, name);
+
+	printk(KERN_INFO "Chardev reg status: %d \n", chrdev_status);
+	printk(KERN_INFO "Chardev devno: %d \n", dev);
+	
 	return 0;
 }
 
@@ -38,4 +51,3 @@ module_exit(template_cleanup);
 
 MODULE_DESCRIPTION("Small module, demo only, not very useful.");
 MODULE_LICENSE("GPL");
-
