@@ -22,7 +22,7 @@ static int __init template_init(void)
 	dev_t dev;
 	int firstminor = 15;
 	int count = 10;
-	char name[] = "gamepad"
+	char name[] = "gamepad";
 
 	int chrdev_status = register_chrdev_region(firstminor, count, name);
 
@@ -30,7 +30,7 @@ static int __init template_init(void)
 
 	printk(KERN_INFO "Chardev reg status: %d \n", chrdev_status);
 	printk(KERN_INFO "Chardev devno: %d \n", dev);
-	
+
 	return 0;
 }
 
