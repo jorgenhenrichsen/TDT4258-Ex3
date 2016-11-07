@@ -1,6 +1,8 @@
 
 # Created by https://www.gitignore.io/api/macos,osx,xcode,git,linux,c
 
+*.gdb
+
 ### macOS ###
 *.DS_Store
 .AppleDouble
