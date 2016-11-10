@@ -92,12 +92,13 @@ static int __init template_init(void)
   iowrite32(0xFF, GPIO_PC_DOUT); // Enable internal pull-up.
 
   /*Setup interrupts*/
-  iowrite32(0x2222222, GPIO_EXTIPSELL); // Enable interrupts.
+  iowrite32(0x22222222, GPIO_EXTIPSELL); // Enable interrupts.
   request_irq(GPIO_EVEN_IRQ, (irq_handler_t)gpio_interrupt_handler, 0, DRIVER_NAME, &gamepad_cdev);
   request_irq(GPIO_ODD_IRQ, (irq_handler_t)gpio_interrupt_handler, 0, DRIVER_NAME, &gamepad_cdev);
 
   /* Enable iterrupts */
   iowrite32(0xFF, GPIO_EXTIFALL); // Enable interrupts on fall.
+  iowrite32(0xFF, GPIO_EXTIRISE); // Enable interrupts on rise.
   iowrite32(0xFF, GPIO_IEN); // Enable GPIO interrupt generation.
 
   cdev_init(&gamepad_cdev, &gdriv_fops); // init our cdev stucture.
@@ -139,7 +140,7 @@ static int fasync_gamepad(int fd, struct file *filp, int on)
 irqreturn_t gpio_interrupt_handler(int irq, void * dev_id, struct pt_regs* regs){
 
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); // Clear interrupt flag.
-
+  //printk("Driver received interrupt\n");
 	/*int buttonPressed = (uint8_t)~(ioread32(GPIO_PC_DIN));
 	switch (buttonPressed) {
 		case Button1: printk("Button1 \n"); break;

@@ -1,13 +1,17 @@
 
 #include "draw.h"
 
+#define min(a,b) (((a)<(b))?(a):(b))
+#define max(a,b) (((a)>(b))?(a):(b))
+
 int fb;
 char * fbmap;
 struct fb_var_screeninfo screenInfo;
 struct fb_fix_screeninfo fScreenInfo;
 struct fb_copyarea rect; // The rect being drawn.
 
-void refreshRect(int x, int y, int width, int height);
+void refreshRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+void drawPixelAt(uint16_t x, uint16_t y, uint16_t color);
 
 void setupFramebuffer(){
 	printf("Opening framebufferdriver\n");
@@ -36,46 +40,37 @@ void setupFramebuffer(){
 		printf("Failed to map the framebuffer\n");
 	}
 
-	drawRect(0, 0, screenInfo.xres, screenInfo.yres, rgb(255,255,255));
-  drawCircle(50, 50, 10, rgb(0,0,0));
+	drawRect(0, 0, screenInfo.xres, screenInfo.yres, 0x0000);
+	refreshRect(0, 0, screenInfo.xres, screenInfo.yres);
 }
 
-void drawPixeltAt(int x,int y,char * color){
+
+void drawPixeltAt(uint16_t x,uint16_t y, uint16_t color){
   long int location = (x*2) + y*640;
 	//long int location = (x * screenInfo.bits_per_pixel/8) + (y*fScreenInfo.line_length);
-	fbmap[location] = color[0];
-	fbmap[location+1] = color[1];
+	fbmap[location] = (uint8_t)color;
+	fbmap[location+1] = (uint8_t)(color>>8);
 }
 
-void drawRect(int x,int y,int width,int height, char * color) {
-  printf("Drawing rect : x=%d, y=%d, width = %d, height%d\n", x, y, width, height);
-	int dx, dy;
 
-	for (dx = x; dx < x + width; dx++) {
-		for (dy = y; dy < y + height; dy++) {
+
+void drawRect(uint16_t x,uint16_t y,uint16_t width,uint16_t height, uint16_t color) {
+  //printf("Drawing rect : x=%d, y=%d, width = %d, height%d\n", x, y, width, height);
+	uint16_t dx, dy;
+	int maxX = x + width;//min((x + width), screenInfo.xres);
+	int maxY = y + height;//min((y + height), screenInfo.yres);
+	for (dx = x; dx < maxX; dx++) {
+		for (dy = y; dy < maxY; dy++) {
       //printf("Pixel: x=%d, y=%d\n", dx, dy);
 			drawPixeltAt(dx, dy, color);
 		}
 	}
-  refreshRect(x, y, width, height);
 }
 
-void refreshRect(int x, int y, int width, int height) {
-  rect.dx = x;
-	rect.dy = y;
+void refreshRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height) {
+  rect.dx = min((x + width), screenInfo.xres) - width;
+	rect.dy = min((y + height), screenInfo.yres) - height;
 	rect.width = width;
 	rect.height = height;
 	ioctl(fb, 0x4680, &rect);
-}
-
-// converts rgb to byte
-char * rgb(int red, int green, int blue) {
-	short int colour16 = (short)(((blue&0xf8)<<8) +
-	    ((red&0xfc)<<3) + ((green&0xf8)>>3));
-
-	char * arr = malloc(sizeof(char)*2);
-	arr[0] = ((colour16 >> 8) & 0xff);
-	arr[1] = ((colour16 >> 0) & 0xff);
-
-	return arr;
 }
