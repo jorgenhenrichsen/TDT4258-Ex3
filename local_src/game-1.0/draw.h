@@ -8,7 +8,10 @@
 #include <linux/fs.h>
 #include <unistd.h>
 
+typedef struct Rect {
+	int x, y, width, height;
+} Rect;
 
 void setupFramebuffer();
-void drawRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t color);
-void refreshRect(uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+void drawRect(Rect rect, uint16_t color);
+void refreshRect(Rect rect);

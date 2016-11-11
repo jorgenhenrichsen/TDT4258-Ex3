@@ -19,15 +19,21 @@
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
 
+
 FILE* gamepad;
 
+
 typedef struct Player {
-	uint16_t x, y, width, height;
+	Rect rect, prevRect;
+	/*uint16_t x, y, width, height;
+	int prevY;*/
 } Player;
 
 typedef struct Ball {
-	int x, y, dx, dy, size;
-	int prevX, prevY;
+	Rect rect, prevRect;
+	int dx, dy;
+	/*int x, y, dx, dy, size;
+	int prevX, prevY;*/
 	bool ignorePlayer;
 } Ball;
 
@@ -48,15 +54,18 @@ void drawBall(Ball ball);
 void refreshBall(Ball ball);
 
 Player playerOne = {
-	15, 60, 10, 50
+	{15, 60, 10, 50}, {15, 60, 10, 50}
+	/*15, 60, 10, 50, 60*/
 };
 
 Player playerTwo = {
-	295, 60, 10, 50
+	{295, 60, 10, 50}, {295, 60, 10, 50}
+	/*295, 60, 10, 50, 60*/
 };
 
 Ball ball = {
-	155, 115, 2, 3, 10, 0, 0, false
+	{155, 115, 10, 10}, {155, 115, 10, 10}, 4, 6, false
+	/*155, 115, 2, 3, 10, 0, 0, false*/
 };
 
 
@@ -68,6 +77,13 @@ bool playerTwoDown = false;
 
 int main(int argc, char *argv[])
 {
+	/*
+	TODO:
+	Dirtybit player
+	Pointers in functions
+	tweak framerate
+
+	*/
 	printf("Hello World, I'm game!\n");
 
 	setupFramebuffer();
@@ -82,9 +98,9 @@ int main(int argc, char *argv[])
 	sigaction( SIGALRM, &sa , NULL);
 
 	timer.it_value.tv_sec = 0;
-	timer.it_value.tv_usec = 10000;
+	timer.it_value.tv_usec = 33333;
 	timer.it_interval.tv_sec = 0;
-	timer.it_interval.tv_usec = 10000;
+	timer.it_interval.tv_usec = 33333;
 
 	setitimer(ITIMER_REAL, &timer, NULL);
 
@@ -119,44 +135,44 @@ void update() {
 		moveDown(&playerTwo);
 	}
 
-	ball.prevX = ball.x;
-	ball.prevY = ball.y;
+	ball.prevRect.x = ball.rect.x;
+	ball.prevRect.y = ball.rect.y;
 
-	ball.x += ball.dx;
-	ball.y += ball.dy;
+	ball.rect.x += ball.dx;
+	ball.rect.y += ball.dy;
 
-	if (ball.x + ball.size >= playerTwo.x) {
-		if ((ball.y + ball.size) >= playerTwo.y && ball.y < (playerTwo.y + playerTwo.height) && !ball.ignorePlayer) {
+	if (ball.rect.x + ball.rect.width >= playerTwo.rect.x) {
+		if ((ball.rect.y + ball.rect.height) >= playerTwo.rect.y && ball.rect.y < (playerTwo.rect.y + playerTwo.rect.height) && !ball.ignorePlayer) {
 			ball.dx *= -1;
 		}
 		else {
 			ball.ignorePlayer = true;
-			if (ball.x + ball.size >= 320) {
+			if (ball.rect.x + ball.rect.width >= 320) {
 				ball.ignorePlayer = false;
-				ball.x = 155;
-				ball.y = 115;
+				ball.rect.x = 155;
+				ball.rect.y = 115;
 			}
 		}
 	}
-	if (ball.x <= playerOne.x + playerOne.width) {
-		if ((ball.y + ball.size) >= playerOne.y && ball.y < (playerOne.y + playerOne.height) && !ball.ignorePlayer) {
+	if (ball.rect.x <= playerOne.rect.x + playerOne.rect.width) {
+		if ((ball.rect.y + ball.rect.height) >= playerOne.rect.y && ball.rect.y < (playerOne.rect.y + playerOne.rect.height) && !ball.ignorePlayer) {
 			ball.dx *= -1;
 		}
 		else {
 			ball.ignorePlayer = true;
-			if (ball.x <= 0) {
+			if (ball.rect.x <= 0) {
 				ball.ignorePlayer = false;
-				ball.x = 155;
-				ball.y = 115;
+				ball.rect.x = 155;
+				ball.rect.y = 115;
 			}
 		}
 	}
-	if (ball.y <= 0) {
-		ball.y = 0;
+	if (ball.rect.y <= 0) {
+		ball.rect.y = 0;
 		ball.dy *= -1;
 	}
-	if (ball.y + ball.size >= 240) {
-		ball.y = 240 - ball.size;
+	if (ball.rect.y + ball.rect.height >= 240) {
+		ball.rect.y = 240 - ball.rect.height;
 		ball.dy *= -1;
 	}
 
@@ -185,44 +201,61 @@ void draw() {
 }
 
 void drawPlayer(Player player) {
-	drawRect(player.x, player.y, player.width, player.height, WHITE);
+	//drawRect(player.x, player.y, player.width, player.height, WHITE);
+	drawRect(player.rect, WHITE);
 }
 
 void clearPlayer(Player player) {
-	drawRect(player.x, 0, player.width, player.y, BLACK);
-	drawRect(player.x, player.y + player.height, player.width, 240 - (player.y + player.height), BLACK);
+	drawRect(player.prevRect, BLACK);
+	//drawRect(player.x, 0, player.width, player.y, BLACK);
+	//drawRect(player.x, player.y + player.height, player.width, 240 - (player.y + player.height), BLACK);
+	//drawRect(player.x, player.prevY, player.width, player.height, BLACK);
 }
 
 void refreshPlayer(Player player) {
-	refreshRect(player.x, 0, player.width, 240);
+	//refreshRect(player.rect);
+	Rect rRect = {
+		player.rect.x, min(player.rect.y, player.prevRect.y), player.rect.width, player.rect.height + abs(player.rect.y - player.prevRect.y) + 1
+	};
+	refreshRect(rRect);
+	//refreshRect(player.x, min(player.y, player.prevY), player.width, player.height + abs(player.y - player.prevY));
 }
 
 void drawBall(Ball ball) {
-	drawRect(ball.x, ball.y, ball.size, ball.size, WHITE);
+	drawRect(ball.rect, WHITE);
+	//drawRect(ball.x, ball.y, ball.size, ball.size, WHITE);
 }
 
 void clearBall(Ball ball) {
-	drawRect(ball.prevX, ball.prevY, ball.size, ball.size, BLACK);
+	drawRect(ball.prevRect, BLACK);
+	//drawRect(ball.prevX, ball.prevY, ball.size, ball.size, BLACK);
 }
 
 void refreshBall(Ball ball) {
-	int x = min(ball.x, ball.prevX);
-	int y = min(ball.y, ball.prevY);
-	int width = max(ball.x, ball.prevX) + ball.size - x;
-	int height = max(ball.y, ball.prevY) + ball.size - y + 1;
 
-	refreshRect(x, y, width, height);
+	int x = min(ball.rect.x, ball.prevRect.x);
+	int y = min(ball.rect.y, ball.prevRect.y);
+
+	Rect rRect =  {
+		x,
+		y,
+		max(ball.rect.x, ball.prevRect.x) + ball.rect.width - x,
+		max(ball.rect.y, ball.prevRect.y) + ball.rect.height - y + 1,
+	};
+	refreshRect(rRect);
 }
 
 void moveUp(struct Player *player) {
-	if (player->y > 1) {
-		player->y -= 2;
+	if (player->rect.y > 5) {
+		player->prevRect.y = player->rect.y;
+		player->rect.y -= 6;
 	}
 }
 
 void moveDown(struct Player *player) {
-	if (player->y + player->height < 239) {
-		player->y += 2;
+	if (player->rect.y + player->rect.height < 235) {
+		player->prevRect.y = player->rect.y;
+		player->rect.y += 6;
 	}
 
 }
