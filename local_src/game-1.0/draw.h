@@ -15,3 +15,4 @@ typedef struct Rect {
 void setupFramebuffer();
 void drawRect(Rect rect, uint16_t color);
 void refreshRect(Rect rect);
+void clearScreen();

@@ -39,6 +39,10 @@ void setupFramebuffer(){
 		printf("Failed to map the framebuffer\n");
 	}
 
+	clearScreen();
+}
+
+void clearScreen() {
 	Rect rect = {
 		0,0, screenInfo.xres, screenInfo.yres
 	};
@@ -46,7 +50,6 @@ void setupFramebuffer(){
 	drawRect(rect, 0x0000);
 	refreshRect(rect);
 }
-
 
 void drawPixeltAt(int x,int y, uint16_t color){
   long int location = (x*2) + y*640;
