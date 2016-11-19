@@ -21,10 +21,12 @@
 #define min(a,b) (((a)<(b))?(a):(b))
 #define max(a,b) (((a)>(b))?(a):(b))
 #define NUM_BALLS 5
-#define WINNING_SCORE 10
+#define WINNING_SCORE 20
 #define SCORE_PANEL_HEIGHT 4
 #define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
 #define CONFETTI_NUM 20
+#define PLAYER_SPEED 8
 #define FRAME_LENGHT 33333 // The time for one frame. 33333 will be 30 fps.
 
 FILE* gamepad;
@@ -68,9 +70,11 @@ uint16_t confettiColor;
 	Returns a random number between -5 and 5, but not 0.
 */
 int randomSpeed() {
-	int speed = (rand() % 11) - 5;
-	int fixSpeed = (rand() % 2) == 0 ? -1 : 1;
-	return speed != 0 ? speed : fixSpeed;
+	int speed = (rand () % 13) - 5;
+  if (abs(speed) < 2) {
+    return (rand() % 2) == 0 ? -2 : 2;
+  }
+  return speed;
 }
 
 /**
@@ -243,9 +247,9 @@ void updateConfetti() {
 	Move a player up.
 */
 void moveUp(struct Player *player) {
-	if (player->rect.y > 5 + SCORE_PANEL_HEIGHT) {
+	if (player->rect.y > PLAYER_SPEED - 1 + SCORE_PANEL_HEIGHT) {
 		player->prevRect.y = player->rect.y;
-		player->rect.y -= 6;
+		player->rect.y -= PLAYER_SPEED;
 		player->dirty = true;
 	}
 }
@@ -254,9 +258,9 @@ void moveUp(struct Player *player) {
 	Move a player down.
 */
 void moveDown(struct Player *player) {
-	if (player->rect.y + player->rect.height < 235) {
+	if (player->rect.y + player->rect.height < SCREEN_HEIGHT - PLAYER_SPEED + 1) {
 		player->prevRect.y = player->rect.y;
-		player->rect.y += 6;
+		player->rect.y += PLAYER_SPEED;
 		player->dirty = true;
 	}
 }
@@ -596,9 +600,6 @@ int main(int argc, char *argv[])
 		// Sleep the amount of time we have left of the frame.
 		if (difference < FRAME_LENGHT) {
 			usleep(FRAME_LENGHT - difference);
-		}
-		else {
-			printf("Dropping frames \n");
 		}
 
 	}
