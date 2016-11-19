@@ -43,7 +43,6 @@ static irqreturn_t gpio_interrupt_handler(int irq, void * dev_id, struct pt_regs
 static int fasync_gamepad(int fd, struct file *filp, int on);
 
 dev_t devno;
-int count;
 struct class *cl;
 //static unsigned int button1 = *GPIO_PC_DIN;
 
@@ -56,36 +55,37 @@ static struct file_operations gdriv_fops = {
  .release = release_gamepad,
  .read = read_gamepad,
  .write = write_gamepad,
- .fasync = fasync_gamepad
+ .fasync = fasync_gamepad,
 };
 
 struct cdev gamepad_cdev;
+int count;
 
 static int __init template_init(void)
 {
   printk("Gamepad driver init \n");
 
-  devno = MKDEV(15, 20);
-  count = 5;
+  /* Allocate chardev numbers */
+  count = 1;
 
-  // TODO: Use alloc_chrdev instead.
-  int status = register_chrdev_region(devno, count, DRIVER_NAME);
 
-  if (status < 0){
-    printk("ERROR registering chrdev region: STATUSCODE: %d \n", status);
+  if (alloc_chrdev_region(&devno, 0, count, DRIVER_NAME) < 0){
+    printk("ERROR allocating chrdev region: STATUSCODE:  \n");
   }
   else {
-  	printk("Reigstered chrdev region \n");
+  	printk("Allocated chrdev region \n");
   }
 
+  //printk("minor: %d, major: %d\n", MINOR(devno), MAJOR(devno));
+
   if (request_mem_region(GPIO_PC_DIN, 1, DRIVER_NAME) == NULL){
-  	printk(KERN_ALERT "Error requesting GPIO_PC_DIN region \n");
+  	printk("Error requesting GPIO_PC_DIN region \n");
   }
   if (request_mem_region(GPIO_PC_DOUT, 1, DRIVER_NAME) == NULL){
-  	printk(KERN_ALERT "Error requesting GPIO_PC_DOUT region \n");
+  	printk("Error requesting GPIO_PC_DOUT region \n");
   }
   if (request_mem_region(GPIO_PC_MODEL, 1, DRIVER_NAME) == NULL){
-  	printk(KERN_ALERT "Error requesting GPIO_PC_MODEL region \n");
+  	printk("Error requesting GPIO_PC_MODEL region \n");
   }
 
   iowrite32(0x33333333, GPIO_PC_MODEL); // Set pin 0-7 as input.
@@ -103,52 +103,38 @@ static int __init template_init(void)
 
   cdev_init(&gamepad_cdev, &gdriv_fops); // init our cdev stucture.
   gamepad_cdev.owner = THIS_MODULE; // Set the cdev owner.
-  cdev_add(&gamepad_cdev, devno, count); // Tell kernel about our cdev.
+  int err = cdev_add(&gamepad_cdev, devno, count); // Tell kernel about our cdev.
+
+  if(err){
+    printk("Failed to register char device. Err: %d", err);
+  }
 
   // Make the driver appear as a file in /dev.
-  cl = class_create(THIS_MODULE, DRIVER_NAME); //
+  cl = class_create(THIS_MODULE, DRIVER_NAME);
   device_create(cl, NULL, devno, NULL, DRIVER_NAME);
 
   return 0;
 }
 
-/*
-* template_cleanup - function to cleanup this module from kernel space
-*
-* This is the second of two exported functions to handle cleanup this
-* code from a running kernel
-*/
-
 static void __exit template_cleanup(void)
 {
- printk("Short life for a small module...\n");
+ printk("Gamepad exiting...\n");
 
  unregister_chrdev_region(devno, count);
+ cdev_del(&gamepad_cdev);
 
 }
 
 static int fasync_gamepad(int fd, struct file *filp, int on)
 {
   int retval = fasync_helper(fd, filp, on, &gamepad_fasync);
-
-  if (retval < 0)
-    return retval;
-  return 0;
+  return retval < 0 ? retval : 0;
 }
 
-
+// Interrupt handler
 irqreturn_t gpio_interrupt_handler(int irq, void * dev_id, struct pt_regs* regs){
 
 	iowrite32(ioread32(GPIO_IF), GPIO_IFC); // Clear interrupt flag.
-  //printk("Driver received interrupt\n");
-	/*int buttonPressed = (uint8_t)~(ioread32(GPIO_PC_DIN));
-	switch (buttonPressed) {
-		case Button1: printk("Button1 \n"); break;
-		case Button2: printk("Button2 \n"); break;
-		case Button3: printk("Button3 \n"); break;
-		case Button4: printk("Button4 \n"); break;
-		default: return IRQ_HANDLED;
-	}*/
 
   if (gamepad_fasync){
     kill_fasync(&gamepad_fasync, SIGIO, POLL_IN);
